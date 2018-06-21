@@ -51,7 +51,7 @@ a:hover, a:active {
           v-for="(item, index) in queryResults"
           v-bind:key="item.id"
           v-bind:data-index="index"
-        ><archive-item :file="item"></archive-item></li>
+        ><archive-item :file="item" :full-path="true"></archive-item></li>
       </ul>
 
       <div v-if="query == ''">
@@ -60,7 +60,7 @@ a:hover, a:active {
           <span>Modified in the last seven days:</span>
           <ul>
             <li v-for="(item, index) in recent" :key="item.id" :data-index="index">
-              <archive-item :file="item"></archive-item>
+              <archive-item :file="item" :full-path="true"></archive-item>
             </li>
           </ul>
         </div>

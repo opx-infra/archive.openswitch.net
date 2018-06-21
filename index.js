@@ -1,6 +1,11 @@
-/* global filesize timeago Vue */
+/* global Vue filesize timeago */
 
-async function bucketXML(bucket, region, marker = "") {
+// Utilities ///////////////////////////////////////////////////////////////////
+
+const bucketXML = async (bucket, region, marker = "") => {
+  /* Fetches XML from S3 bucket, continuing at marker if supplied.
+   * Returns a list of XML elements, one per file.
+   */
   var contents = []
   var url = "http://" + bucket + ".s3." + region + ".amazonaws.com/"
 
@@ -23,7 +28,7 @@ async function bucketXML(bucket, region, marker = "") {
   return contents
 }
 
-function reverseSortReleases(tree) {
+const reverseSortReleases = tree => {
   /* Reverse sort file list in directories with releases to show newest
    * releases first. Recursive.
    *
@@ -32,7 +37,7 @@ function reverseSortReleases(tree) {
    * 1. Reverse the list so that the newest release is first.
    * 2. Hide all children
    * 3. Find the first child in the list starting with a number and show it
-  */
+   */
   if (tree.children.length > 0 && /^\d/.test(tree.children[0].name)) {
     tree.children.reverse()
     for (const child of tree.children) {
@@ -49,7 +54,10 @@ function reverseSortReleases(tree) {
   }
 }
 
-async function bucketFileList(bucket, contents) {
+const bucketFileList = async (bucket, contents) => {
+  /* Turns a list of XML S3 object entries into a list of dictionaries.
+   * Each dictionary contains information about the file.
+   */
   var fileList = []
 
   for (const f of contents) {
@@ -74,7 +82,7 @@ async function bucketFileList(bucket, contents) {
   return fileList
 }
 
-function initTree(bucket) {
+const initTree = bucket => {
   return {
     children: [],
     id: 0,
@@ -83,7 +91,10 @@ function initTree(bucket) {
   }
 }
 
-function loadTreeFromFileList(list, tree) {
+const loadTreeFromFileList = (list, tree) => {
+  /* Transforms an S3 list into a tree of pseudo-directories and files.
+   */
+
   var id = 1
   for (const f of list) {
     var tmp = tree
@@ -118,6 +129,7 @@ function loadTreeFromFileList(list, tree) {
   reverseSortReleases(tree)
 }
 
+// Basic component for recursion. Formats our description lists.
 Vue.component("archive-folder", {
   props: ["folder"],
   template: `
@@ -131,6 +143,7 @@ Vue.component("archive-folder", {
   `,
 })
 
+// Directory name and a link to toggle showing the contents of the directory.
 Vue.component("archive-heading", {
   props: ["folder"],
   template: `
@@ -140,12 +153,19 @@ Vue.component("archive-heading", {
   `,
 })
 
+// Single file download link.
 Vue.component("archive-item", {
-  props: ["file"],
+  props: ["file", "fullPath"],
   template: `
-  <div><a :href="file.downloadURL">{{ file.name }}</a> <small>({{ file.size }}, {{ timeago().format(file.lastModified) }})</small></div>
+  <div>
+    <a v-if="fullPath == true" :href="file.downloadURL">{{ file.path }}</a>
+    <a v-else :href="file.downloadURL">{{ file.name }}</a>
+    <small>({{ file.size }}, {{ timeago().format(file.lastModified) }})</small>
+  </div>
   `,
 })
+
+// Proceed /////////////////////////////////////////////////////////////////////
 
 var title = location.host + " Listing"
 switch (location.host) {
@@ -170,12 +190,13 @@ const app = new Vue({
   },
   computed: {
     queryResults: function() {
-      var vm = this
-      if (vm.query == "") {
+      if (this.query == "") {
         return []
       } else {
         return this.list.filter(item => {
-          return item.path.toLowerCase().indexOf(vm.query.toLowerCase()) !== -1
+          return (
+            item.path.toLowerCase().indexOf(this.query.toLowerCase()) !== -1
+          )
         })
       }
     },
@@ -187,6 +208,7 @@ const app = new Vue({
   },
 })
 
+// Load fake file to indicate loading status.
 app.tree.children.push({
   name: "Loading data...",
   children: [],
@@ -195,8 +217,11 @@ app.tree.children.push({
 
 bucketXML(location.host, "us-west-2").then(contents => {
   bucketFileList(location.host, contents).then(list => {
+    // Remove loading "file"
     app.tree.children.pop()
+    // Load downloaded list
     app.list = list
+    // Hide the tree for huge buckets (performance)
     if (app.list.length > 10000) {
       app.tree.show = false
     }
