@@ -167,14 +167,16 @@ Vue.component("archive-item", {
 
 // Proceed /////////////////////////////////////////////////////////////////////
 
+var bucket = location.host
 var title = location.host + " Listing"
-switch (location.host) {
-  case "archive.openswitch.net":
-    title = "OPX Archive Listing"
-    break
-  case "deb.openswitch.net":
-    title = "OPX Debian Package Listing"
-    break
+
+if (location.host.includes("archive.openswitch.net")) {
+  title = "OPX Archive Listing"
+} else if (location.host.includes("deb.openswitch.net")) {
+  title = "OPX Debian Package Listing"
+} else if (location.host == "") {
+  bucket = "archive.openswitch.net"
+  title = "OPX Archive Listing"
 }
 
 const weekAgo = new Date()
@@ -185,7 +187,7 @@ const app = new Vue({
   data: {
     title: title,
     query: "",
-    tree: initTree(location.host),
+    tree: initTree(bucket),
     list: [],
   },
   computed: {
@@ -212,11 +214,11 @@ const app = new Vue({
 app.tree.children.push({
   name: "Loading data...",
   children: [],
-  downloadURL: "http://" + location.host + ".s3-us-west-2.amazonaws.com/",
+  downloadURL: "http://" + bucket + ".s3-us-west-2.amazonaws.com/",
 })
 
-bucketXML(location.host, "us-west-2").then(contents => {
-  bucketFileList(location.host, contents).then(list => {
+bucketXML(bucket, "us-west-2").then(contents => {
+  bucketFileList(bucket, contents).then(list => {
     // Remove loading "file"
     app.tree.children.pop()
     // Load downloaded list
