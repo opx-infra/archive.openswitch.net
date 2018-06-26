@@ -43,11 +43,6 @@ const reverseSortReleases = tree => {
     for (const child of tree.children) {
       child.show = false
     }
-    var index = 0
-    while (!/^\d/.test(tree.children[index].name)) {
-      index++
-    }
-    tree.children[index].show = true
   }
   for (const child of tree.children) {
     reverseSortReleases(child)
@@ -189,6 +184,7 @@ const app = new Vue({
     query: "",
     tree: initTree(bucket),
     list: [],
+    stableVersion: "",
   },
   computed: {
     queryResults: function() {
@@ -206,6 +202,9 @@ const app = new Vue({
       return this.list
         .filter(file => file.lastModified > weekAgo)
         .sort((f1, f2) => f2.lastModified - f1.lastModified)
+    },
+    stableFiles: function() {
+      return this.list.filter(file => file.path.includes(this.stableVersion))
     },
   },
 })
@@ -228,5 +227,6 @@ bucketXML(bucket, "us-west-2").then(contents => {
       app.tree.show = false
     }
     loadTreeFromFileList(app.list, app.tree)
+    app.stableVersion = app.tree.children[0].children[0].name
   })
 })

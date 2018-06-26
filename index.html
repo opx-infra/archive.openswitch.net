@@ -56,6 +56,13 @@ a:hover, a:active {
 
       <div v-if="query == ''">
         <hr />
+        <span>Current release: {{ stableVersion }}</span>
+        <ul>
+          <li v-for="(item, index) in stableFiles" :key="item.id" :data-index="index">
+            <archive-item :file="item" :full-path="true"></archive-item>
+          </li>
+        </ul>
+        <hr />
         <div v-if="recent.length != 0">
           <span>Modified in the last seven days:</span>
           <ul>
@@ -68,6 +75,7 @@ a:hover, a:active {
         <hr />
       </div>
 
+      <p>All files</p>
       <archive-folder v-if="query == ''" :folder="tree"></archive-folder>
     </div>
 
