@@ -204,7 +204,7 @@ const app = new Vue({
         .sort((f1, f2) => f2.lastModified - f1.lastModified)
     },
     stableFiles: function() {
-      return this.list.filter(file => file.path.includes(this.stableVersion))
+      return this.list.filter(file => file.path.includes("/" + this.stableVersion + "/"))
     },
   },
 })
@@ -227,6 +227,13 @@ bucketXML(bucket, "us-west-2").then(contents => {
       app.tree.show = false
     }
     loadTreeFromFileList(app.list, app.tree)
-    app.stableVersion = app.tree.children[0].children[0].name
+    releasePattern = /^\d+\.\d+\.\d+$/
+    // app.tree.children[1] is our installers/ directory
+    for (let child of app.tree.children[1].children) {
+      if (releasePattern.test(child.name)) {
+        app.stableVersion = child.name
+        break
+      }
+    }
   })
 })
